@@ -70,10 +70,11 @@ Com o balanceador de carga rodando, envie requisições HTTP para o endereço co
 ```
 andre-load-balancer/
 ├── src/
-│   └── server.ts         # Código do balanceador de carga
+│   └── index.ts         # Código do balanceador de carga
 ├── config.json           # Configuração do balanceador de carga
 ├── tsconfig.json         # Configurações do TypeScript
 ├── package.json          # Dependências do projeto
+├── yarn.lock             # Gerado pelo Yarn
 └── README.md             # Este arquivo
 ```
 
