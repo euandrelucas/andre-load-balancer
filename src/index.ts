@@ -22,6 +22,14 @@ const fastify = Fastify({
 const servers: string[] = config.servers;
 let current = 0;
 
+declare module 'fastify' {
+  interface FastifyRequest {
+    locals?: {
+      upstream: string;
+    };
+  }
+}
+
 function getNextServer(): string {
   const server = servers[current];
   current = (current + 1) % servers.length;
@@ -33,7 +41,7 @@ fastify.addHook("onRequest", (request, reply, done) => {
   const target = getNextServer();
 
   fastify.log.info({
-    msg: "Nova requisição recebida",
+    msg: "🌍 Nova requisição recebida",
     method,
     url,
     ip,
@@ -41,17 +49,26 @@ fastify.addHook("onRequest", (request, reply, done) => {
     encaminhadoPara: target,
   });
 
+  (request as any).locals = { upstream: target };
   done();
 });
 
-fastify.register(fastifyHttpProxy, {
-  upstream: "",
-  prefix: "/",
-  rewritePrefix: "/",
-  http2: false,
-  replyOptions: {
-    getUpstream: () => getNextServer(),
-  },
+fastify.register(async (instance) => {
+  instance.addHook("preHandler", (request, reply, done) => {
+    const upstream = (request.locals as any).upstream;
+    request.raw.url = upstream + request.raw.url;
+    done();
+  });
+
+  instance.register(fastifyHttpProxy, {
+    upstream: "",
+    prefix: "/",
+    rewritePrefix: "/",
+    http2: false,
+    replyOptions: {
+      getUpstream: (req) => (req.locals as any).upstream,
+    },
+  });
 });
 
 fastify.listen({ port: config.port, host: "0.0.0.0" }, (err, address) => {
